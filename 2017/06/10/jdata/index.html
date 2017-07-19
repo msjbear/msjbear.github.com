@@ -1,0 +1,1354 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Spark,Xgboost," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="BigBear's Blog" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/uploads/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="总体解决方案本文将高潜用户购买意向预测，抽象为一个二分类问题。从用户，商品，品牌，用户-商品，用户-品牌五个维度进行特征提取。将观察天未来5天有购买行为的用户-商品对标记为正样本，观察天过去30天至未来5天有交互行为但未购买的用户-商品对标记为负样本。由于正负样本比例极不平衡，采用了对正样本进行重采样及负样本进行下采样的方式来平衡正负样本比例。利用xgboost进行模型训练，最后利用LR对预测结果">
+<meta name="keywords" content="Spark,Xgboost">
+<meta property="og:type" content="article">
+<meta property="og:title" content="京东JData算法大赛小结(公司内部赛)">
+<meta property="og:url" content="http://yoursite.com/2017/06/10/jdata/index.html">
+<meta property="og:site_name" content="BigBear&#39;s Blog">
+<meta property="og:description" content="总体解决方案本文将高潜用户购买意向预测，抽象为一个二分类问题。从用户，商品，品牌，用户-商品，用户-品牌五个维度进行特征提取。将观察天未来5天有购买行为的用户-商品对标记为正样本，观察天过去30天至未来5天有交互行为但未购买的用户-商品对标记为负样本。由于正负样本比例极不平衡，采用了对正样本进行重采样及负样本进行下采样的方式来平衡正负样本比例。利用xgboost进行模型训练，最后利用LR对预测结果">
+<meta property="og:image" content="http://yoursite.com/uploads/ml/4.jpg">
+<meta property="og:image" content="http://yoursite.com/uploads/ml/1.jpg">
+<meta property="og:image" content="http://yoursite.com/uploads/ml/2.jpg">
+<meta property="og:image" content="http://yoursite.com/uploads/ml/3.jpg">
+<meta property="og:updated_time" content="2017-06-18T06:43:19.382Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="京东JData算法大赛小结(公司内部赛)">
+<meta name="twitter:description" content="总体解决方案本文将高潜用户购买意向预测，抽象为一个二分类问题。从用户，商品，品牌，用户-商品，用户-品牌五个维度进行特征提取。将观察天未来5天有购买行为的用户-商品对标记为正样本，观察天过去30天至未来5天有交互行为但未购买的用户-商品对标记为负样本。由于正负样本比例极不平衡，采用了对正样本进行重采样及负样本进行下采样的方式来平衡正负样本比例。利用xgboost进行模型训练，最后利用LR对预测结果">
+<meta name="twitter:image" content="http://yoursite.com/uploads/ml/4.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"always","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/06/10/jdata/"/>
+
+
+
+
+
+  <title>京东JData算法大赛小结(公司内部赛) | BigBear's Blog</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?35cbf8977b0279ea11c9f0c2bb4023f8";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">BigBear's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Do The Right Thing!</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-categories " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/10/jdata/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="sj_mei">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="BigBear's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">京东JData算法大赛小结(公司内部赛)</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-10T22:00:00+08:00">
+                2017-06-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ML/" itemprop="url" rel="index">
+                    <span itemprop="name">ML</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2017/06/10/jdata/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2017/06/10/jdata/" class="leancloud_visitors" data-flag-title="京东JData算法大赛小结(公司内部赛)">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="总体解决方案"><a href="#总体解决方案" class="headerlink" title="总体解决方案"></a>总体解决方案</h2><p>本文将高潜用户购买意向预测，抽象为一个二分类问题。从用户，商品，品牌，用户-商品，用户-品牌五个维度进行特征提取。将观察天未来5天有购买行为的用户-商品对标记为正样本，观察天过去30天至未来5天有交互行为但未购买的用户-商品对标记为负样本。由于正负样本比例极不平衡，采用了对正样本进行重采样及负样本进行下采样的方式来平衡正负样本比例。利用xgboost进行模型训练，最后利用LR对预测结果进行加权。取每个用户最高预测概率对应的user-sku对，取top12000作为最终输出结果。</p>
+<h2 id="实现方案技术栈"><a href="#实现方案技术栈" class="headerlink" title="实现方案技术栈"></a>实现方案技术栈</h2><p>集市堡垒机(环境) + Hive(ETL) + Spark&amp; Spark-Xgboost(Model)</p>
+<h2 id="特征工程"><a href="#特征工程" class="headerlink" title="特征工程"></a>特征工程</h2><p>从用户、商品、品牌、用户-商品交互、用户-品牌交互5个维度，再对各个维度从不同周期(1/3/5/7/10/15/30天)进行建模及特征提取。 </p>
+<p>3-1 用户维度(script/dim_feature_v3/dim_user_feature_etl.sql)：用户等级，性别，注册天数，年龄等级，浏览量，点击量，关注量，加购车量，下单量，取消关注量，点击购买率，点击加购率，点击关注率，浏览购买转化率，加购购买转化率，关注购买转化率，浏览day/sku/brand数，点击day/sku/brand数，关注day/sku/brand数，加购车day/sku/brand数，下单day/sku/brand数，取消关注day/sku/brand数，最近浏览/点击/购买/关注距今天数，平均每天浏览/点击/购买/关注量(sku/brand数)，平均浏览/点击/购买/关注行为操作间隔天数  </p>
+<p>3-2 商品维度(script/dim_feature_v3/dim_sku_feature_etl.sql)：商品评论数，好评率，差评率，商品属性1，属性2，属性3，浏览量，点击量，关注量，加购车量，下单量，取消关注量，点击购买率，点击加购率，点击关注率，浏览购买转化率，加购购买转化率，关注购买转化率，点击购买用户占比，点击加购用户占比，点击关注用户占比，浏览购买转化用户占比，加购购买转化用户占比，关注购买转化用户占比，浏览用户数，点击用户数，关注用户数，加购车用户数，下单用户数，取消关注用户数，平均每天浏览/点击/购买/关注量(用户数)，平均每个用户浏览/点击/购买/关注量 </p>
+<p>3-3 品牌维度(script/dim_feature_v3/dim_brand_feature_etl.sql)：浏览量，点击量，关注量，加购车量，下单量，取消关注量，点击购买率，点击加购率，点击关注率，浏览购买转化率，加购购买转化率，关注购买转化率，点击购买用户占比，点击加购用户占比，点击关注用户占比，浏览购买转化用户占比，加购购买转化用户占比，关注购买转化用户占比，浏览用户数，点击用户数，关注用户数，加购车用户数，下单用户数，取消关注用户数，平均每天浏览/点击/购买/关注量(用户数)，平均每个用户浏览/点击/购买/关注量，商品热度(点击量<em>0.01+下单量</em>0.5+加购量<em>0.1-取消关注量</em>0.1+关注量*0.1) </p>
+<p>3-4 用户-商品交互维度(script/dim_feature_v3/dim_user_sku_feature_etl.sql)：浏览量，点击量，关注量，加购车量，下单量，取消关注量，点击购买率，点击加购率，点击关注率，浏览购买转化率，加购购买转化率，关注购买转化率，浏览day数，点击day数，关注day数，加购车day数，下单day数，取消关注day数，最近浏览/点击/购买/关注距今天数，平均浏览/点击/购买/关注行为操作间隔天数 </p>
+<p>3-5 用户品牌交互维度(script/dim_feature_v3/dim_user_brand_feature_etl.sql)：浏览量，点击量，关注量，加购车量，下单量，取消关注量，点击购买率，点击加购率，点击关注率，浏览购买转化率，加购购买转化率，关注购买转化率，浏览day数，点击day数，关注day数，加购车day数，下单day数，取消关注day数，最近浏览/点击/购买/关注距今天数，平均浏览/点击/购买/关注行为操作间隔天数 </p>
+<p>3-6 交叉类特征(script/dim_feature_v3/feature_wide_table.sql)：用户-商品与用户浏览/点击/关注/加购/下单/取消关注占比，用户-品牌与用户浏览/点击/关注/加购/下单/取消关注占比etc.</p>
+<h2 id="样本选择及特征预处理"><a href="#样本选择及特征预处理" class="headerlink" title="样本选择及特征预处理"></a>样本选择及特征预处理</h2><p>4-1 将观察天未来5天有购买行为的用户-商品对标记为正样本，观察天过去30天至未来5天有交互行为但未购买的用户-商品对标记为负样本。<br>Eg.(将2016-04-06~2016-04-10有下单的用户-商品标记为正样本，将2016-03-06~2016-04-10有交互但未下单的用户-商品标记为负样本)。 </p>
+<p>4-2 由于正负样本比例极不平衡，正负样本比例约为1500:2400000，采用了对正样本进行重采样及负样本进行下采样的方式来平衡正负样本比例。<br>具体采样方式为：将正样本复制10份，同时将负样本通过随机采样为200000 </p>
+<p>4-3 特征预处理：对于类型型特征：通过Spark VectorIndexer进行one-hot编码。对于连续型特征，通过Spark Normalizer进行归一化。  </p>
+<h2 id="模型集成方案"><a href="#模型集成方案" class="headerlink" title="模型集成方案"></a>模型集成方案</h2><p>利用spark-xgboost进行滑窗模型训练，最后利用LR对各个预测结果进行加权。取每个用户最高预测概率对应的user-sku对，取top 12000作为最终输出结果。<br>单模型准确率xgboost&gt;gbdt&gt;rf，因此只选择了xgboost以滑窗方式进行模型训练，未采用多模型融合stacking，融合过程也只用了lr加权融合，其它方式待尝试。 </p>
+<div align="center"><img src="/uploads/ml/4.jpg" width="1000" height="500" alt="1.1" align="center"></div>
+
+<h2 id="代码运行说明"><a href="#代码运行说明" class="headerlink" title="代码运行说明"></a>代码运行说明</h2><h3 id="工程代码目录：JData-Spark"><a href="#工程代码目录：JData-Spark" class="headerlink" title="工程代码目录：JData-Spark"></a>工程代码目录：JData-Spark</h3><p>使用maven进行源码编译，成功编译后会生成jdata-spark-1.0-SNAPSHOT-assembly.zip<br>jdata-spark-1.0-SNAPSHOT-assembly.zip目录结构如下：</p>
+<div align="center"><img src="/uploads/ml/1.jpg" width="1000" height="500" alt="1.1" align="center"></div>
+
+<h3 id="脚本运行"><a href="#脚本运行" class="headerlink" title="脚本运行"></a>脚本运行</h3><p>进入到shell子目录，目录下各步骤脚本如下：</p>
+<div align="center"><img src="/uploads/ml/2.jpg" width="1000" height="500" alt="1.1" align="center"></div><br>各个步骤运行说明，各个步骤间有依赖，每个步骤运行完再运行下一个步骤【首先需要将比赛数据集解压后手动放到data目录下】：<br>6-2-1 step1_load_basic_data_and_create_wide_table.sh：加载数据集到hive表，并将user/product/action汇总加工成为一张基础数据宽表。<br>运行命令：nohup sh step1_load_basic_data_and_create_wide_table.sh &gt; tmp.log &amp;<br><br>6-2-2 step2_run_dim_feature_while.sh：加工user/sku/brand/user_sku/user_brand各维度特征，由于后续使用了滑窗集成，所以需要运行多份(part1-part12)。<br>运行命令：nohup sh step2_run_dim_feature_while.sh &gt; tmp.log &amp;<br><br>6-2-3 step3_run_merge_feature_while.sh：将各个维度的特征汇总为一张宽表，便于后续进行抽样及模型训练。由于后续使用了滑窗集成，所以需要运行多份(part1-part12)。<br>运行命令：nohup sh step3_run_merge_feature_while.sh &gt; tmp.log &amp;<br>step3_run_predict_feature.sh：预测指标加工<br>运行命令：nohup sh step3_run_predict_feature.sh &gt; tmp.log &amp;<br><br>6-2-4 step4_run_sample_feature_while.sh：对加工的特征宽表进行采样<br>运行命令：nohup sh step4_run_sample_feature_while.sh &gt; tmp.log &amp;<br>由于模型训练是在风控集市跑的spark任务，因此若要让脚本在其它集市可用，需要手动修改脚本及配置文件【影响步骤3.2.5，3.2.6，3.2.7】<br><div align="center"><img src="/uploads/ml/3.jpg" width="1000" height="500" alt="1.1" align="center"></div>
+
+<p>6-2-5 step5_jdata_runXgboost_train.sh：利用spark-xgboost进行模型训练<br>运行命令：nohup sh step5_jdata_runXgboost_train.sh &gt; tmp.log &amp; </p>
+<p>6-2-6 step6_jdata_runXgboost_stacking.sh：将spark-xgboost训练好的6个子模型，进行stacking LR融合<br>运行命令：nohup sh step6_jdata_runXgboost_stacking.sh &gt; tmp.log &amp; </p>
+<p>6-2-7 step7_jdata_runXgboost_stacking_predict.sh：利用3.2.6训练好的融合模型，预测用户在4.16-4.20会购买的user_sku对<br>运行命令：nohup sh step7_jdata_runXgboost_stacking_predict.sh &gt; tmp.log &amp;<br>6-2-8 待3.2.7步骤运行完后，需要手动将生成txt格式结果从hdfs目录down下来，并按比赛要求的格式整理输出<br>hadoop fs –get hdfs://ns2/user/mart_risk/sjmei/tests/xgboost/result_stacking_v3_20160406 </p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>第一次参加数据挖掘类比赛，作为一名新手，通过本次比赛，学习了数据挖掘的整个流程，同时也进一步熟悉了spark ml框架的使用。其次，更多的是在实践过程中体会到了自身的不足，要想打好比赛，必须源于对业务的深入理解及数据的细致分析，而这一点恰恰是做的最不好的。比赛中没有花很多时间对数据进行深入理解与细致分析。在特征处理，调参方面也做的很糙。 solo比赛很累，思维也很受限，只知道堆特征+xgboost+lr融合的方案，看到排行榜上其他同学的成绩都在噌噌地往上涨，而自己又不知道该如何优化涨分，成绩也一直停滞不前，以后要多向大牛学习以及多和别的同学一起交流学习。<br>作为一名CS专业毕业的人，对于使用各种数据挖掘工具进行技术实现不是什么问题，但其实对于数据挖掘来说，更重要的还是分析建模能力，对业务的感知能力，自己这方面还很欠缺，今后需要多多加强。<br>感谢公司举办的此次大赛，让我获益良多！ </p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/Xgboost/" rel="tag"># Xgboost</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/05/xgboost-install/" rel="next" title="xgboost4j编译安装笔记">
+                <i class="fa fa-chevron-left"></i> xgboost4j编译安装笔记
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/uploads/avatar.jpg"
+               alt="sj_mei" />
+          <p class="site-author-name" itemprop="name">sj_mei</p>
+           
+              <p class="site-description motion-element" itemprop="description">BigData & ML & DL</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">17</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/msjbear" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.linkedin.com/in/sj-mei-464b6a10b" target="_blank" title="Linkedin">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  Linkedin
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/u/1908202311" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://blog.csdn.net/you12345678901234567" target="_blank" title="CSDN">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  CSDN
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+		
+		<div id="music163player">
+			<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=280 height=86 src="//music.163.com/outchain/player?type=2&id=38592976&auto=1&height=66">
+			</iframe>
+		</div>
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#总体解决方案"><span class="nav-number">1.</span> <span class="nav-text">总体解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现方案技术栈"><span class="nav-number">2.</span> <span class="nav-text">实现方案技术栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#特征工程"><span class="nav-number">3.</span> <span class="nav-text">特征工程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#样本选择及特征预处理"><span class="nav-number">4.</span> <span class="nav-text">样本选择及特征预处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型集成方案"><span class="nav-number">5.</span> <span class="nav-text">模型集成方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码运行说明"><span class="nav-number">6.</span> <span class="nav-text">代码运行说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工程代码目录：JData-Spark"><span class="nav-number">6.1.</span> <span class="nav-text">工程代码目录：JData-Spark</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#脚本运行"><span class="nav-number">6.2.</span> <span class="nav-text">脚本运行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">sj_mei</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+    
+    <script>
+      var cloudTieConfig = {
+        url: document.location.href, 
+        sourceId: "",
+        productKey: "66d2daa6e86846e58f32ecacfa005078",
+        target: "cloud-tie-wrapper"
+      };
+    </script>
+    <script src="https://img1.ws.126.net/f2e/tie/yun/sdk/loader.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("7DisX00Rz2MgtyIeEsJJSxSa-gzGzoHsz", "F35WwJxNcP2TEfBs5KVTPSiA");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

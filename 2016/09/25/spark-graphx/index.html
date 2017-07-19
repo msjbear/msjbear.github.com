@@ -1,0 +1,1375 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Spark,Graphx," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="BigBear's Blog" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/uploads/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="图性能优化笔记1原始方法对求社区对应顶点数过程中，使用了单机函数collectAsMap，当社区数非常多时，该函数将数据汇总到driver节点，导致driver节点发生OOM。解决办法：避免对大数据量使用collectAsMap操作，改为RDD集合求将交集。 1234567891011121314151617181920212223242526272829def getGraphWithCommV">
+<meta name="keywords" content="Spark,Graphx">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark Graphx">
+<meta property="og:url" content="http://yoursite.com/2016/09/25/spark-graphx/index.html">
+<meta property="og:site_name" content="BigBear&#39;s Blog">
+<meta property="og:description" content="图性能优化笔记1原始方法对求社区对应顶点数过程中，使用了单机函数collectAsMap，当社区数非常多时，该函数将数据汇总到driver节点，导致driver节点发生OOM。解决办法：避免对大数据量使用collectAsMap操作，改为RDD集合求将交集。 1234567891011121314151617181920212223242526272829def getGraphWithCommV">
+<meta property="og:updated_time" content="2017-06-18T06:58:01.708Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spark Graphx">
+<meta name="twitter:description" content="图性能优化笔记1原始方法对求社区对应顶点数过程中，使用了单机函数collectAsMap，当社区数非常多时，该函数将数据汇总到driver节点，导致driver节点发生OOM。解决办法：避免对大数据量使用collectAsMap操作，改为RDD集合求将交集。 1234567891011121314151617181920212223242526272829def getGraphWithCommV">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"always","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2016/09/25/spark-graphx/"/>
+
+
+
+
+
+  <title>Spark Graphx | BigBear's Blog</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?35cbf8977b0279ea11c9f0c2bb4023f8";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">BigBear's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Do The Right Thing!</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-categories " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/09/25/spark-graphx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="sj_mei">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="BigBear's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spark Graphx</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-09-25T22:00:00+08:00">
+                2016-09-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spark/" itemprop="url" rel="index">
+                    <span itemprop="name">Spark</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spark/Graphx/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphx</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2016/09/25/spark-graphx/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2016/09/25/spark-graphx/" class="leancloud_visitors" data-flag-title="Spark Graphx">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="图性能优化笔记1"><a href="#图性能优化笔记1" class="headerlink" title="图性能优化笔记1"></a>图性能优化笔记1</h3><p>原始方法对求社区对应顶点数过程中，使用了单机函数collectAsMap，当社区数非常多时，该函数将数据汇总到driver节点，导致driver节点发生OOM。<br><code>解决办法</code>：避免对大数据量使用collectAsMap操作，改为RDD集合求将交集。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">getGraphWithCommVertexNum</span></span>[<span class="type">ED</span>: <span class="type">ClassTag</span>](g: <span class="type">Graph</span>[<span class="type">VertexAttr</span>, <span class="type">ED</span>]): <span class="type">Graph</span>[<span class="type">VertexAttr</span>, <span class="type">ED</span>] = &#123;</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line">      * modified by cdemishangian</div><div class="line">      *</div><div class="line">      * BugFix: avoid using collectAsMap lead to driver OOM</div><div class="line">      *</div><div class="line">      * val cvnMap = g.vertices.map ( e =&gt; (e._2.community, 1)).reduceByKey(_ + _).collectAsMap</div><div class="line">      * val graph = g.mapVertices&#123; (vid, vertexAttr) =&gt;</div><div class="line">      * vertexAttr.commVertexNum = cvnMap.getOrElse(vertexAttr.community, LocalConstants.countMissingVal)</div><div class="line">      *   vertexAttr</div><div class="line">      * &#125;</div><div class="line">      */</div><div class="line">    <span class="keyword">val</span> cvnMapRDD = g.vertices.map(e =&gt; (e._2.community, <span class="number">1</span>)).reduceByKey(_ + _)</div><div class="line"></div><div class="line">    <span class="keyword">val</span> commCntRDD = g.vertices.map(r =&gt;&#123;</div><div class="line">      (r._2.community,r._1)</div><div class="line">    &#125;).leftOuterJoin(cvnMapRDD).map(r=&gt;</div><div class="line">      (r._2._1,(r._1,r._2._2.getOrElse(<span class="type">LocalConstants</span>.countMissingVal)))</div><div class="line">    )</div><div class="line"></div><div class="line">    <span class="keyword">val</span> graph = g.subgraph(vpred = (vid,attr)=&gt; vid != <span class="type">LocalConstants</span>.vidLongMissingVal).joinVertices(commCntRDD)&#123;</div><div class="line">      (vid, vertexAttr, commCnt) =&gt;</div><div class="line">        vertexAttr.commVertexNum = commCnt._2</div><div class="line">        vertexAttr</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    graph</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
+<h3 id="图性能优化笔记2"><a href="#图性能优化笔记2" class="headerlink" title="图性能优化笔记2"></a>图性能优化笔记2</h3><p>由于spark2.0中彻底废弃了mapReduceTriplets函数，改为了aggregateMessages操作，<br>以下代码为mapReduceTriplets转换为aggregateMessages的转换操作</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">    <span class="keyword">val</span> nodeWeightMapFunc = (e:<span class="type">EdgeTriplet</span>[<span class="type">VD</span>,<span class="type">Long</span>]) =&gt; <span class="type">Iterator</span>((e.srcId,e.attr), (e.dstId,e.attr))</div><div class="line">    <span class="keyword">val</span> nodeWeightReduceFunc = (e1:<span class="type">Long</span>,e2:<span class="type">Long</span>) =&gt; e1+e2</div><div class="line">    <span class="keyword">val</span> nodeWeights = graph.mapReduceTriplets(nodeWeightMapFunc,nodeWeightReduceFunc)</div><div class="line"></div><div class="line"></div><div class="line">    <span class="keyword">val</span> nodeWeightMapFunc = (e:<span class="type">EdgeContext</span>[<span class="type">VD</span>,<span class="type">Long</span>,<span class="type">Long</span>]) =&gt; &#123;</div><div class="line">      e.sendToDst(e.attr)</div><div class="line">      e.sendToSrc(e.attr)</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">val</span> nodeWeightReduceFunc = (e1:<span class="type">Long</span>,e2:<span class="type">Long</span>) =&gt; e1+e2</div><div class="line">    <span class="keyword">val</span> nodeWeights = graph.aggregateMessages(nodeWeightMapFunc,nodeWeightReduceFunc) </div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">/**</span></div><div class="line">   * Creates the messages passed between each vertex to convey neighborhood community data.</div><div class="line">   */</div><div class="line">  <span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">sendMsg</span></span>(et:<span class="type">EdgeTriplet</span>[<span class="type">VertexState</span>,<span class="type">Long</span>]) = &#123;</div><div class="line">    <span class="keyword">val</span> m1 = (et.dstId,<span class="type">Map</span>((et.srcAttr.community,et.srcAttr.communitySigmaTot)-&gt;et.attr))</div><div class="line">    <span class="keyword">val</span> m2 = (et.srcId,<span class="type">Map</span>((et.dstAttr.community,et.dstAttr.communitySigmaTot)-&gt;et.attr))</div><div class="line">    <span class="type">Iterator</span>(m1, m2)    </div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">sendMsg</span></span>(et:<span class="type">EdgeContext</span>[<span class="type">VertexState</span>,<span class="type">Long</span>,<span class="type">Map</span>[(<span class="type">Long</span>,<span class="type">Long</span>),<span class="type">Long</span>]]) = &#123;</div><div class="line">    et.sendToDst(<span class="type">Map</span>((et.srcAttr.community, et.srcAttr.communitySigmaTot) -&gt; et.attr))</div><div class="line">    et.sendToSrc(<span class="type">Map</span>((et.dstAttr.community, et.dstAttr.communitySigmaTot) -&gt; et.attr))</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
+<h3 id="图性能优化笔记3"><a href="#图性能优化笔记3" class="headerlink" title="图性能优化笔记3"></a>图性能优化笔记3</h3><p>现在业务场景在计算graphx中的三角计数指标时，由于关系数很多，达到10亿条边，通过观察运行日志发现，每次运行tcNum指标时，会产生25倍于边内存量的Shuffle Read/Write；由于缺乏对底层原理的掌握，一直不知道如何优化，经过几周的间断性尝试，今天终于通过设置图分区策略解决问题:设置PartitionStrategy.EdgePartition2D<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">def getGraphWithAttrTCNum[<span class="string">ED: ClassTag</span>](<span class="link">g: Graph[VertexAttr, ED]</span>): Graph[VertexAttr, ED] = &#123;</div><div class="line"><span class="code">    val newGraph = g.convertToCanonicalEdges().partitionBy(PartitionStrategy.EdgePartition2D)</span></div><div class="line"><span class="code">    val tcv = newGraph.triangleCount().vertices</span></div><div class="line"><span class="code">    logWarning("JRDM:"+tcv.count)</span></div><div class="line"></div><div class="line"><span class="code">    val graph = g.outerJoinVertices(tcv) &#123; (id, a, o) =&gt;</span></div><div class="line"><span class="code">      a.tcNum = o.getOrElse(LocalConstants.countMissingVal)</span></div><div class="line"><span class="code">      a</span></div><div class="line"><span class="code">    &#125;</span></div><div class="line"></div><div class="line"><span class="code">    graph</span></div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>val lineArray = line.split(“\s+”)//\s表示空格,回车,换行等空白符, +号表示一个或多个</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><ol>
+<li>sc.textFile 读文件，生成原始的RDD</li>
+<li>每个分区(的计算节点)把每条记录放进 PrimitiveVector 里，这个结构是spark里为primitive数据优化的存储结构。<br>把 PrimitiveVector 里的数据一条条取出，转化成 EdgePartition ，即 EdgeRDD 的分区实现。这个过程中生成了面向列存的结构：src点的array，dst点的array，edge的属性array，以及两个正反向map(用于对应点的local id和global id)。</li>
+<li>对 EdgeRDD 做一次count触发这次边建模任务，真正persist起来。</li>
+<li>用 EdgePartition 去生成一个 RoutingTablePartition ，里面是vertexId到partitionId的对应关系，借助 RoutingTablePartition 生成 VertexRDD 。</li>
+<li>由 EdgeRDD 和 VertexRDD 生成 Graph。前者维护了边的属性、边两头顶点的属性、两头顶点各自的global vertexID、两头顶点各自的local Id（在一个edge分区里的array index）、用于寻址array的正反向map。后者维护了点存在于哪个边的分区上的Map。</li>
+</ol>
+<p>我们对 Fast Unfolding 算法做一个简要介绍，它分为以下两个阶段：</p>
+<p>第一个阶段：首先将每个节点指定到唯一的一个社区，然后按顺序将节点在这些社区间进行移动。怎么移动呢？以上图中的节点 i 为例，它有三个邻居节点 j1, j2, j3，我们分别尝试将节点 i 移动到 j1, j2, j3 所在的社区，并计算相应的 modularity 变化值，哪个变化值最大就将节点 i 移动到相应的社区中去（当然，这里我们要求最大的 modularity 变化值要为正，如果变化值均为负，则节点 i 保持不动）。按照这个方法反复迭代，直到网络中任何节点的移动都不能再改善总的 modularity 值为止。</p>
+<p>第二个阶段：将第一个阶段得到的社区视为新的“节点”（一个社区对应一个），重新构造子图，两个新“节点”之间边的权值为相应两个社区之间各边的权值的总和。</p>
+<p>我们将上述两个阶段合起来称为一个 pass，显然，这个 pass  可以继续下去。</p>
+<p>从上述描述我们可以看出，这种算法包含了一种 hierarchy 结构，正如对一个学校的所有初中生进行聚合一样，首先我们可以将他们按照班级来聚合，进一步还可以在此基础上按照年级来聚合，两次聚合都可以看做是一个社区发现结果，就看你想要聚合到什么层次与程度。</p>
+<p>标签传播算法（LPA）的做法比较简单：<br>第一步: 为所有节点指定一个唯一的标签；<br>第二步: 逐轮刷新所有节点的标签，直到达到收敛要求为止。对于每一轮刷新，节点标签刷新的规则如下:<br>    对于某一个节点，考察其所有邻居节点的标签，并进行统计，将出现个数最多的那个标签赋给当前节点。当个数最多的标签不唯一时，随机选一个。</p>
+<p>注：算法中的记号 N_n^k 表示节点 n 的邻居中标签为 k 的所有节点构成的集合。</p>
+<p>并行化问题及解决策略</p>
+<p>进行并行化处理时，我们主要遇到两个问题：一是中间计算量过大，二是消息滞后。</p>
+<p><strong>中间计算量过大</strong><br>如果直接使用公式（1）进行Modularity计算，会导致中间计算量过大，因为它需要考虑两两节点对的情况（pairwise），即n平方的量级（n为节点个数），在大数据量情况下并不可行。</p>
+<p>尝试的一个解决方法是，进行分步计算，如根据节点Id的hash值将数据划分成100个分区，每次只对分区内的节点进行计算。但是这种方法处理不直观，效率也不高。</p>
+<p>经过反复尝试后，我们发现，更好的解决方法是使用化简后的公式（2）进行处理，避免了pairwise的过程。</p>
+<p><strong>消息滞后</strong><br>由于在并行化处理时，在t轮时每个节点根据t-1轮时的邻居社区信息进行更新，存在一定的消息滞后现象，会造成 “互换社区” 的问题</p>
+<p>每个节点被分配到不同的社区中（节点1属于G1，节点2属于G2，节点3属于G3，节点4属于G4）<br>第二轮b图时，每个节点根据它邻居的信息进行更新（如节点1的新社区为邻居节点2在第一轮的社区G2）<br>最终情况会导致不相连的节点反而归属同一社区（如节点1与3均受到节点2的影响，归属社区G2）<br>第三轮c图类似，造成社区的互换。造成这种情况的原因在于，每个节点根据它的邻居前一轮的信息进行变化，而它的邻居也在同步改变。</p>
+<p>类似的，还会存在有 “社区归属延迟” 问题。示意图如图4所示。节点1的归属社区受到节点2的影响，归属到社区2。但是节点2的社区也在同步变化，它可能归属于社区3，这样就造成只有节点1归属到社区2，成为一个孤立的点。</p>
+<p>考虑有以下两种解决策略：</p>
+<p>添加随机值，即每轮迭代中会有部分节点的社区保持不变。如果阈值足够高，其实相当于逐个节点进行社区信息的更新，也即与串行的方法等价。使用随机值带来的问题是不能保证结果，得到的Modularity值有时高，有时低。并且，“互换社区”的问题不一定能解决。考虑到的一种解决思路是，多次运行，取最优。但是，这种方法也不太可靠，随机性较大。</p>
+<p>得到结果后构建逻辑图，求解连通区域，将同一个连通区域的点都归为一个社区。比如初始结果是互换社区的<1,2>,<2,1>（格式为&lt;节点Id，归属社区&gt;），求连通区域就可以将它们都归属同一社区。这种思路也可以解决 “社区归属延迟”的问题，如初始结果是<1,2>,<2,3>,<3,4>，节点1应该与归属社区2，但是节点2又归属于社区3，所以最终应该节点1,2,3都归属社区3。</3,4></2,3></1,2></2,1></1,2></p>
+<p>对比上面两种方法，后一种策略充分考虑了图的特性，更为可取，能够保证结果的稳定性。大致代码如下：</p>
+<p><strong>总结</strong></p>
+<p>FastUnfolding算法，基于结果Modularity值的优化进行，得到的社区发现效果比较理想，对比LPA算法会更稳定。并且，FastUnfolding算法会不断合并节点构造新图，大大减少了计算量，使得大规模图数据的计算成为可能。</p>
+<p>原始的FastUnfolding算法采用串行化的实现思路，不适合面对海量数据。实现中需要进行算法并行化，充分利用并行化框架带来的计算优势。在将传统的串行化算法改造成并行化算法的过程中时，会遇到中间计算量过大、消息滞后造成的问题，如“互换社区”和“社区归属延迟”问题。解决的思路是考虑图的特性，对结果再次求解连通图区域，并通过重置社区得到最终结果。这样既保证了算法的准确性，又保证其性能，从而能够在大规模的网络上，进行实际的生产应用。</p>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference:"></a>Reference:</h3><p>[1]：<a href="http://blog.csdn.net/pelick/article/details/47293495" target="_blank" rel="external"> GraphX 图数据建模和存储</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/Graphx/" rel="tag"># Graphx</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/24/spark-common-problems-solutions/" rel="next" title="spark常见问题解决方法">
+                <i class="fa fa-chevron-left"></i> spark常见问题解决方法
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/09/25/spark-submit/" rel="prev" title="Spark Submit任务提交过程源码分析">
+                Spark Submit任务提交过程源码分析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/uploads/avatar.jpg"
+               alt="sj_mei" />
+          <p class="site-author-name" itemprop="name">sj_mei</p>
+           
+              <p class="site-description motion-element" itemprop="description">BigData & ML & DL</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">17</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/msjbear" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.linkedin.com/in/sj-mei-464b6a10b" target="_blank" title="Linkedin">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  Linkedin
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/u/1908202311" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://blog.csdn.net/you12345678901234567" target="_blank" title="CSDN">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  CSDN
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+		
+		<div id="music163player">
+			<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=280 height=86 src="//music.163.com/outchain/player?type=2&id=38592976&auto=1&height=66">
+			</iframe>
+		</div>
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#图性能优化笔记1"><span class="nav-number">1.</span> <span class="nav-text">图性能优化笔记1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#图性能优化笔记2"><span class="nav-number">2.</span> <span class="nav-text">图性能优化笔记2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#图性能优化笔记3"><span class="nav-number">3.</span> <span class="nav-text">图性能优化笔记3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#流程"><span class="nav-number">4.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference:</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">sj_mei</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+    
+    <script>
+      var cloudTieConfig = {
+        url: document.location.href, 
+        sourceId: "",
+        productKey: "66d2daa6e86846e58f32ecacfa005078",
+        target: "cloud-tie-wrapper"
+      };
+    </script>
+    <script src="https://img1.ws.126.net/f2e/tie/yun/sdk/loader.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("7DisX00Rz2MgtyIeEsJJSxSa-gzGzoHsz", "F35WwJxNcP2TEfBs5KVTPSiA");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
