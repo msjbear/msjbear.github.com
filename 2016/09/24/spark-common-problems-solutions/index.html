@@ -103,7 +103,7 @@
 <meta property="og:site_name" content="BigBear&#39;s Blog">
 <meta property="og:description" content="对于Spark程序优化，应从如下几点进行：&amp;nbsp;&amp;nbsp;1. 通过监控CPU、内存、网络、IO、GC、应用指标等数据，切实找到系统的瓶颈点。&amp;nbsp;&amp;nbsp;2. 统筹全局，制定相应的解决方案，解决问题的思路是否清晰准确很重要，切勿『头疼医头，脚疼医脚』，应总体考虑把握。&amp;nbsp;&amp;nbsp;3. 了解一些技术的背景知识，对于每次优化尽量做得彻底些，多进行总结。&amp;nbsp;&amp;nb">
 <meta property="og:image" content="http://yoursite.com/uploads/spark/spark_complie_config.png">
-<meta property="og:updated_time" content="2017-06-18T08:25:49.696Z">
+<meta property="og:updated_time" content="2017-06-18T08:25:49.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="spark常见问题解决方法">
 <meta name="twitter:description" content="对于Spark程序优化，应从如下几点进行：&amp;nbsp;&amp;nbsp;1. 通过监控CPU、内存、网络、IO、GC、应用指标等数据，切实找到系统的瓶颈点。&amp;nbsp;&amp;nbsp;2. 统筹全局，制定相应的解决方案，解决问题的思路是否清晰准确很重要，切勿『头疼医头，脚疼医脚』，应总体考虑把握。&amp;nbsp;&amp;nbsp;3. 了解一些技术的背景知识，对于每次优化尽量做得彻底些，多进行总结。&amp;nbsp;&amp;nb">
@@ -466,7 +466,7 @@
 <p><strong>6.</strong> Spark GBDT实现方式：spark gbdt的实现基于：J.H. Friedman.  “Stochastic Gradient Boosting.” 1999.spark。<br>&nbsp;&nbsp;<code>1)</code> gbdt使用一般的残差更新方式，利用残差（梯度方向）更新样本数据集，做为下棵树模型训练的样本<br><figure class="highlight arduino"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">data = input.<span class="built_in">map</span>(<span class="built_in">point</span> =&gt; LabeledPoint(-loss.gradient(partialModel, <span class="built_in">point</span>),<span class="built_in">point</span>.features))</div></pre></td></tr></table></figure></p>
 <p>&nbsp;&nbsp;<code>2)</code> 建树过程用variance作为split准则, xgboost对目标函数进行变换，每轮建树的过程用gradient和hessian计算gain作为split准则<br>&nbsp;&nbsp;<code>3)</code> 算法性能（效率、支持数据量）<br>&nbsp;&nbsp;<code>4)</code> 算法结果的一致性</p>
 <p><strong>7.</strong> UDAF（User- Defined Aggregation Funcation）：<a href="http://p-x1984.iteye.com/blog/1156392" target="_blank" rel="external">http://p-x1984.iteye.com/blog/1156392</a><br>Hive自定义UDF和聚合函数UDAF：<a href="http://computerdragon.blog.51cto.com/6235984/1288567" target="_blank" rel="external">http://computerdragon.blog.51cto.com/6235984/1288567</a><br>Hive自定义UDF和聚合函数UDAF：<a href="http://www.tuicool.com/articles/mYZ7R3" target="_blank" rel="external">http://www.tuicool.com/articles/mYZ7R3</a></p>
-<p><strong>8.</strong> java.lang.NoSuchMethodException: java.util.Set.<init>()<br><a href="&#109;&#x61;&#105;&#108;&#116;&#x6f;&#58;&#104;&#116;&#116;&#x70;&#58;&#47;&#47;&#109;&#97;&#x69;&#x6c;&#45;&#97;&#114;&#x63;&#104;&#105;&#x76;&#x65;&#115;&#46;&#97;&#112;&#x61;&#99;&#104;&#101;&#46;&#111;&#x72;&#x67;&#47;&#109;&#x6f;&#x64;&#95;&#109;&#x62;&#111;&#x78;&#47;&#x68;&#105;&#x76;&#101;&#x2d;&#x75;&#115;&#x65;&#x72;&#x2f;&#50;&#48;&#49;&#51;&#x30;&#55;&#46;&#109;&#98;&#x6f;&#120;&#x2f;&#37;&#x33;&#67;&#67;&#x45;&#49;&#67;&#65;&#x34;&#49;&#x43;&#x2e;&#49;&#49;&#x37;&#54;&#x45;&#x25;&#x32;&#53;&#114;&#x64;&#109;&#x40;&#98;&#97;&#121;&#x6e;&#111;&#116;&#x65;&#46;&#x63;&#x6f;&#x6d;&#x25;&#51;&#69;">&#104;&#116;&#116;&#x70;&#58;&#47;&#47;&#109;&#97;&#x69;&#x6c;&#45;&#97;&#114;&#x63;&#104;&#105;&#x76;&#x65;&#115;&#46;&#97;&#112;&#x61;&#99;&#104;&#101;&#46;&#111;&#x72;&#x67;&#47;&#109;&#x6f;&#x64;&#95;&#109;&#x62;&#111;&#x78;&#47;&#x68;&#105;&#x76;&#101;&#x2d;&#x75;&#115;&#x65;&#x72;&#x2f;&#50;&#48;&#49;&#51;&#x30;&#55;&#46;&#109;&#98;&#x6f;&#120;&#x2f;&#37;&#x33;&#67;&#67;&#x45;&#49;&#67;&#65;&#x34;&#49;&#x43;&#x2e;&#49;&#49;&#x37;&#54;&#x45;&#x25;&#x32;&#53;&#114;&#x64;&#109;&#x40;&#98;&#97;&#121;&#x6e;&#111;&#116;&#x65;&#46;&#x63;&#x6f;&#x6d;&#x25;&#51;&#69;</a></init></p>
+<p><strong>8.</strong> java.lang.NoSuchMethodException: java.util.Set.<init>()<br><a href="&#109;&#97;&#x69;&#108;&#x74;&#111;&#58;&#104;&#x74;&#x74;&#x70;&#58;&#x2f;&#x2f;&#x6d;&#97;&#105;&#108;&#x2d;&#x61;&#114;&#x63;&#104;&#x69;&#x76;&#101;&#115;&#x2e;&#97;&#112;&#97;&#99;&#x68;&#x65;&#46;&#111;&#114;&#x67;&#x2f;&#109;&#x6f;&#100;&#95;&#109;&#98;&#x6f;&#120;&#47;&#x68;&#x69;&#x76;&#101;&#x2d;&#117;&#115;&#x65;&#114;&#47;&#50;&#x30;&#x31;&#51;&#x30;&#55;&#x2e;&#109;&#98;&#x6f;&#x78;&#47;&#37;&#x33;&#x43;&#x43;&#69;&#49;&#67;&#x41;&#x34;&#x31;&#67;&#46;&#x31;&#49;&#55;&#54;&#69;&#37;&#x32;&#x35;&#x72;&#x64;&#x6d;&#64;&#98;&#x61;&#x79;&#x6e;&#x6f;&#x74;&#x65;&#x2e;&#x63;&#111;&#x6d;&#37;&#x33;&#x45;">&#104;&#x74;&#x74;&#x70;&#58;&#x2f;&#x2f;&#x6d;&#97;&#105;&#108;&#x2d;&#x61;&#114;&#x63;&#104;&#x69;&#x76;&#101;&#115;&#x2e;&#97;&#112;&#97;&#99;&#x68;&#x65;&#46;&#111;&#114;&#x67;&#x2f;&#109;&#x6f;&#100;&#95;&#109;&#98;&#x6f;&#120;&#47;&#x68;&#x69;&#x76;&#101;&#x2d;&#117;&#115;&#x65;&#114;&#47;&#50;&#x30;&#x31;&#51;&#x30;&#55;&#x2e;&#109;&#98;&#x6f;&#x78;&#47;&#37;&#x33;&#x43;&#x43;&#69;&#49;&#67;&#x41;&#x34;&#x31;&#67;&#46;&#x31;&#49;&#55;&#54;&#69;&#37;&#x32;&#x35;&#x72;&#x64;&#x6d;&#64;&#98;&#x61;&#x79;&#x6e;&#x6f;&#x74;&#x65;&#x2e;&#x63;&#111;&#x6d;&#37;&#x33;&#x45;</a></init></p>
 <p><strong>9.</strong> Hive可以允许用户编写自己定义的函数UDF，来在查询中使用。Hive中有3种UDF：<br>&nbsp;&nbsp;<code>* UDF</code>：操作单个数据行，产生单个数据行;<br>&nbsp;&nbsp;<code>* UDAF</code>：操作多个数据行，产生一个数据行。<br>&nbsp;&nbsp;<code>* UDTF</code>：操作一个数据行，产生多个数据行一个表作为输出。  </p>
 <p><strong>10.</strong> Hive查询数据时，有些聚类函数在HQL没有自带，需要用户自定义实现UDTF。<br>实现用户自定义聚合函数: Sum, Average…… n – 1<br>&nbsp;&nbsp;<code>10.1.</code> 必须import org.apache.hadoop.hive.ql.exec.UDAF和org.apache.hadoop.hive.ql.exec.UDAFEvaluator。<br>&nbsp;&nbsp;<code>10.2.</code> 函数类需要继承UDAF类，内部类Evaluator实UDAFEvaluator接口。<br>&nbsp;&nbsp;<code>10.3.</code> Evaluator需要实现init、iterate、terminatePartial、merge、terminate这几个函数。<br>&nbsp;&nbsp;<code>10.3.1.</code> init函数实现接口UDAFEvaluator的init函数。<br>&nbsp;&nbsp;<code>10.3.2.</code> iterate接收传入的参数，并进行内部的轮转。其返回类型为boolean。<br>&nbsp;&nbsp;<code>10.3.3.</code> terminatePartial无参数，其为iterate函数轮转结束后，返回轮转数据，terminatePartial类于hadoop的Combiner。<br>&nbsp;&nbsp;<code>10.3.4.</code> merge接收terminatePartial的返回结果，进行数据merge操作，其返回类型为boolean。<br>&nbsp;&nbsp;<code>10.3.5.</code> terminate返回最终的聚集函数结果。</p>
 <p><strong>11.</strong> Apache Zeppelin编译安装：<a href="http://www.iteblog.com/archives/1573" target="_blank" rel="external">http://www.iteblog.com/archives/1573</a><br>Apache Zeppelin installation grunt build error：<a href="http://stackoverflow.com/questions/33352309/apache-zeppelin-installation-grunt-build-error?rq=1" target="_blank" rel="external">http://stackoverflow.com/questions/33352309/apache-zeppelin-installation-grunt-build-error?rq=1</a><br><code>解决方案</code>：进入web模块npm install</p>
@@ -540,8 +540,8 @@ createWithDefault(&quot;file:/${system:user.dir}/spark-warehouse&quot;)
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2016/09/25/spark-submit/" rel="prev" title="Spark Submit任务提交过程源码分析">
-                Spark Submit任务提交过程源码分析 <i class="fa fa-chevron-right"></i>
+              <a href="/2016/09/25/spark-graphx/" rel="prev" title="Spark GraphX">
+                Spark GraphX <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -607,7 +607,7 @@ createWithDefault(&quot;file:/${system:user.dir}/spark-warehouse&quot;)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">18</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -629,7 +629,7 @@ createWithDefault(&quot;file:/${system:user.dir}/spark-warehouse&quot;)
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-count">17</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
